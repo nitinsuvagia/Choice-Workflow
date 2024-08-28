@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: choice-wf
+spec:
+  entrypoint: main
+  volumeClaimTemplates:
+  - metadata:
+      name: choice-wf-pvc
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: pl-machine
+        template: password-locker
+      - name: fpd-machine
+        template: fetch-pms-data
+        dependencies:
+        - pl-machine
+      - name: prd-machine
+        template: process-raw-data
+        dependencies:
+        - fpd-machine
+      - name: as-machine
+        template: annual-summery
+        dependencies:
+        - prd-machine
+      - name: forecast-machine
+        template: forecast-90days
+        dependencies:
+        - prd-machine
+      - name: email-machine
+        template: email
+        dependencies:
+        - forecast-machine
+        - as-machine
+
+  - name: password-locker
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : Process Locker"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
+
+  - name: fetch-pms-data
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : Fetch PMS Data"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
+
+  - name: process-raw-data
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : Process RAW Data"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
+
+  - name: annual-summery
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : Annual Summary"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
+
+  - name: forecast-90days
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : 90 Days Forecast"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
+
+  - name: email
+    container:
+      image: nitinsuvagia/choice-wf:latest
+      command: ["sh", "-c"]
+      args: ["echo Running Machine : Sending Emails"]
+    volumeMounts:
+    - name: choice-wf-pvc
+      mountPath: /mnt/data
