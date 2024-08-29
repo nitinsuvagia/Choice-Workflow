@@ -11,6 +11,7 @@ def read_project_json(file_path):
     return data
 
 def build_and_push_image(dockerfile_path, image_tag, context_dir):
+    
     try:
         print(f"Building Docker image {image_tag}...")
         subprocess.run([
@@ -37,11 +38,12 @@ def main():
 
     for folder in folders:
 
-        dockerfile_path = os.path.join(run_path,folder, 'Dockerfile')
-        projectfile_path = os.path.join(context_dir,"Project.json")
+        dockerfile_path = os.path.join(run_path, folder, 'Dockerfile')
         context_dir = os.path.join(run_path,folder)    # It's current Directory of Dockerfile
+        projectfile_path = os.path.join(context_dir,"Project.json")
 
         projectJson = read_project_json(projectfile_path)
+        
         image_name = projectJson.get("name").lower().replace(" ","")
         version = projectJson.get("version")
         image_tag = f"{dockerhub_path}/{image_name}:{version}"
