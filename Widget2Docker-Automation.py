@@ -1,5 +1,14 @@
 import subprocess
 import os
+import json
+
+def read_project_json(file_path):
+    
+    # Open and read the JSON file
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    
+    return data
 
 def build_and_push_image(dockerfile_path, image_tag, context_dir):
     try:
@@ -18,22 +27,26 @@ def build_and_push_image(dockerfile_path, image_tag, context_dir):
         raise
 
 def main():
-
+    
     # Replace below line of code to fetch Widget uploaded and it's Code Path
     # Also fetch other required fields from Pakckage.json file
     
     dockerhub_path = "nitinsuvagia" # we will create "quantumdatalytica"
-    package_name = "passwordlocker" # This name will be from Pakcage.json
-    version = "1.0.0" # This image version will be from Pakcage.json
+    folders = ['ChoiceFetchReportsMachine', 'InitWorkflowMachine','PasswordLockerMachine']  # Replace with your folders using Parameters
+    run_path = "../QuantamDataLytics-POC/Machine"
 
-    folders = ['folder1', 'folder2']  # Replace with your folders using Parameters
-    
     for folder in folders:
-        dockerfile_path = os.path.join(folder, 'Dockerfile')
-        context_dir = folder    # It's current Directory of Dockerfile
-        image_tag = f"{dockerhub_path}/{package_name}:{version}"
 
-        build_and_push_image(dockerfile_path, image_tag, context_dir, )
+        dockerfile_path = os.path.join(run_path,folder, 'Dockerfile')
+        projectfile_path = os.path.join(context_dir,"Project.json")
+        context_dir = os.path.join(run_path,folder)    # It's current Directory of Dockerfile
 
-    if __name__ == "__main__":
-        main()
+        projectJson = read_project_json(projectfile_path)
+        image_name = projectJson.get("name").lower().replace(" ","")
+        version = projectJson.get("version")
+        image_tag = f"{dockerhub_path}/{image_name}:{version}"
+
+        build_and_push_image(dockerfile_path, image_tag, context_dir)
+
+if __name__ == "__main__":
+    main()
