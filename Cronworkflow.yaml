@@ -1,0 +1,258 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  generateName: choice-comfortinn-
+  namespace: argo
+spec:
+  schedule: '*/10 * * 8-12 *'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  startingDeadlineSeconds: 10
+  workflowSpec:
+    entrypoint: main
+    ttlStrategy:
+      secondsAfterCompletion: 60
+    onExit: on-exit-workflow
+    volumes:
+    - name: wfs-wf-pv
+      persistentVolumeClaim:
+        claimName: choice-wf-pvc
+    templates:
+    - name: main
+      dag:
+        tasks:
+        - name: Starter
+          template: starter
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"Starter","machinetemplate_name":"Starter","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":23,"prog_lang":"python","input_data":{"property_code":"AC32AW","property_id":47},"output":"Starter.json","depends_machine":[]}'
+          dependencies: []
+        - name: password-locker
+          template: password-locker
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"password-locker","machinetemplate_name":"password-locker","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":13,"prog_lang":"python","input_data":{"username":"gm.mo215","password":"Festus63028*","property_code":"AC32AW","property_id":47},"output":"password-locker.json","depends_machine":["Starter"]}'
+          dependencies:
+          - Starter
+        - name: database-connection
+          template: database-connection
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"database-connection","machinetemplate_name":"database-connection","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":21,"prog_lang":"python","input_data":{"db_name":"QDA_AC32AW","db_port":"5432","db_host":"backup-db-ema-postgres.cryru6bacdry.us-east-1.rds.amazonaws.com","db_username":"postgres","db_password":"9MGPMPiDn2RdegC2QMhc","property_code":"AC32AW","property_id":47},"output":"database-connection.json","depends_machine":["Starter"]}'
+          dependencies:
+          - Starter
+        - name: choice-pms-connection
+          template: choice-pms-connection
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"choice-pms-connection","machinetemplate_name":"choice-pms-connection","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":14,"prog_lang":"python","input_data":{"res_before":90,"res_after":0,"occ_after":90,"external_property_code":"MO215","occ_before":4,"property_code":"AC32AW","property_id":47},"output":"choice-pms-connection.json","depends_machine":["password-locker","database-connection","database-connection"]}'
+          dependencies:
+          - password-locker
+          - database-connection
+          - database-connection
+        - name: choice-pms-res-standardization
+          template: choice-pms-res-standardization
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"choice-pms-res-standardization","machinetemplate_name":"choice-pms-res-standardization","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":18,"prog_lang":"python","input_data":{"ID":"b9574a29-c044-4df5-be26-6682af3b75b1","property_code":"AC32AW","property_id":47},"output":"choice-pms-res-standardization.json","depends_machine":["choice-pms-connection"]}'
+          dependencies:
+          - choice-pms-connection
+        - name: annual-summary-overview
+          template: annual-summary-overview
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"annual-summary-overview","machinetemplate_name":"annual-summary-overview","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":15,"prog_lang":"python","input_data":{"inventory":89,"property_code":"AC32AW","property_id":47},"output":"annual-summary-overview.json","depends_machine":["choice-pms-res-standardization"]}'
+          dependencies:
+          - choice-pms-res-standardization
+        - name: transient-group-summary
+          template: transient-group-summary
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"transient-group-summary","machinetemplate_name":"transient-group-summary","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":16,"prog_lang":"python","input_data":{"inventory":89,"property_code":"AC32AW","property_id":47},"output":"transient-group-summary.json","depends_machine":["choice-pms-res-standardization"]}'
+          dependencies:
+          - choice-pms-res-standardization
+        - name: email
+          template: email
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"email","machinetemplate_name":"email","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":17,"prog_lang":"python","input_data":{"message":"AC32AW
+                - Comfort Inn Festus - St Louis South","subject":"AC32W Test Run","sender_email":"prutha.vekaria@softqubes.com","to_emails":["hari@softqubes.com"],"cc_emails":["satish.thummar@softqubes.com"],"bcc_emails":["nitin@softqubes.com"],"smtp_password":"qtbenadjlndgcxfu","property_code":"AC32AW","property_id":47},"output":"email.json","depends_machine":["transient-group-summary","annual-summary-overview","brand-rateshop"]}'
+          dependencies:
+          - transient-group-summary
+          - annual-summary-overview
+          - brand-rateshop
+        - name: brand-rateshop
+          template: brand-rateshop
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name":"brand-rateshop","machinetemplate_name":"brand-rateshop","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":24,"prog_lang":"python","input_data":{"up_to_next":15,"rategain_sid":"51438","rategain_token":"2CDF9F80-A74B-4CCF-B283-C8134CDAFA65","rategain_my_property_id":"1375412","rategain_property_ids":["1375412","509087","525598","555315","517755"],"total_guest":1,"total_los":1,"property_code":"AC32AW","property_id":47},"output":"brand-rateshop.json","depends_machine":["database-connection"]}'
+          dependencies:
+          - database-connection
+    - name: starter
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/workflowstarter:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: password-locker
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/passwordlocker:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: database-connection
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/database_connection:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: choice-pms-connection
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/choicefetchreports:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: choice-pms-res-standardization
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/choice_process_raw_data:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: annual-summary-overview
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/annual_summary:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: transient-group-summary
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/group_transient_summary:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: email
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/send_email:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: brand-rateshop
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/rateshop_rategain:2.4.3
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
+    - name: on-exit-workflow
+      steps:
+      - - name: Exit
+          template: exit-workflow
+          arguments:
+            parameters:
+            - name: args
+              value: '{"machine_name": "Exit","machinetemplate_name": "exit-workflow","workflow_name":"Choice
+                - Comfort Inn","machine_version":"1.0.0","machine_ID":23,"prog_lang":"python","input_data":{"ID":"d7064d28-5da8-4b24-b2c6-fc17aa86f189","property_code":"AC32AW","property_id":47},"output":"Starter.json","depends_machine":[]}'
+    - name: exit-workflow
+      inputs:
+        parameters:
+        - name: args
+      container:
+        image: nitinsuvagia/exithandler:2.4.2
+        command:
+        - python
+        - main.py
+        args:
+        - '{{inputs.parameters.args}}'
+        volumeMounts:
+        - name: wfs-wf-pv
+          mountPath: /mnt/qwf-data
